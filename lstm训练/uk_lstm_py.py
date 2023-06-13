@@ -84,9 +84,8 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
         pbar.set_description(f'Epoch {epoch + 1}/{num_epochs}, Loss: {loss.item():.6f}')  # 更新进度条描述信息
-
-# Make predictions on the test set
-lstm.eval()
+# Save the model parameters
+torch.save(lstm.state_dict(), 'uk_lstm_py.pth')
 # Make predictions on the test set
 lstm.eval()
 with torch.no_grad():
