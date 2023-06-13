@@ -7,6 +7,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 import matplotlib
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 matplotlib.rcParams['font.family'] = 'SimHei'
 
@@ -73,6 +74,7 @@ optimizer = optim.Adam(lstm.parameters(), lr=0.001)
 # Training loop
 num_epochs = 250
 for epoch in range(num_epochs):
+    pbar = tqdm(train_loader, total=len(train_loader))  # 使用tqdm包装train_loader
     for batch_x, batch_y in train_loader:
         optimizer.zero_grad()
         batch_x = batch_x.to(device)
@@ -81,6 +83,7 @@ for epoch in range(num_epochs):
         loss = criterion(output.squeeze(), batch_y)
         loss.backward()
         optimizer.step()
+        pbar.set_description(f'Epoch {epoch + 1}/{num_epochs}, Loss: {loss.item():.6f}')  # 更新进度条描述信息
 
 # Make predictions on the test set
 lstm.eval()
