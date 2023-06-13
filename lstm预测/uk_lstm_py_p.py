@@ -22,6 +22,7 @@ print(torch.cuda.is_available())
 torch.cuda.manual_seed(my_seed)
 
 # Load data
+# 这里你需要加载你的预测数据，替换'all_data'
 all_data = np.fromfile("uk_data")
 stand_scaler = MinMaxScaler()
 all_data = stand_scaler.fit_transform(all_data.reshape(-1, 1))
@@ -44,9 +45,6 @@ X_test = torch.tensor(X_test, dtype=torch.float32).to(device)
 Y_train = torch.tensor(Y_train, dtype=torch.float32).to(device)
 Y_test = torch.tensor(Y_test, dtype=torch.float32).to(device)
 
-# Create DataLoader for training
-train_dataset = TensorDataset(X_train, Y_train)
-train_loader = DataLoader(train_dataset, batch_size=512, shuffle=True)
 
 # Define the LSTM model using PyTorch
 class LSTMModel(nn.Module):
@@ -64,52 +62,26 @@ class LSTMModel(nn.Module):
         x = self.activation(x)
         return x
 
+
 # Create the model and move to GPU
 lstm = LSTMModel().to(device)
 
-# Define the loss function and optimizer
-criterion = nn.MSELoss()
-optimizer = optim.Adam(lstm.parameters(), lr=0.001)
+# Load the model parameters
+lstm.load_state_dict(torch.load("F:/network-traffic-predict/lstm训练/uk_lstm_py.pth"))
 
-# Training loop
-num_epochs = 250
-for epoch in range(num_epochs):
-    pbar = tqdm(train_loader, total=len(train_loader))  # 使用tqdm包装train_loader
-    for batch_x, batch_y in train_loader:
-        optimizer.zero_grad()
-        batch_x = batch_x.to(device)
-        batch_y = batch_y.squeeze().to(device)
-        output = lstm(batch_x)
-        loss = criterion(output.squeeze(), batch_y)
-        loss.backward()
-        optimizer.step()
-        pbar.set_description(f'Epoch {epoch + 1}/{num_epochs}, Loss: {loss.item():.6f}')  # 更新进度条描述信息
+# Set the model to evaluation mode
+lstm.eval()
 
-
-lstm.train()
+# Make predictions
 with torch.no_grad():
     X_test = X_test.view(-1, sequence_len, 1).to(device)
     Y_predict = lstm(X_test).squeeze().cpu()
     Y_predict_real = stand_scaler.inverse_transform(Y_predict.squeeze().numpy().reshape(-1, 1))
     Y_test_real = stand_scaler.inverse_transform(Y_test.cpu().numpy().reshape(-1, 1))
 
-# Save the model parameters
-torch.save(lstm.state_dict(), 'uk_lstm_py.pth')
 
 # Plot the results
-fig = plt.figure(figsize=(20, 2))
+plt.figure(figsize=(20, 2))
 plt.plot(Y_predict_real / (1024 * 1024))
 plt.plot(Y_test_real / (1024 * 1024))
 plt.show()
-
-# Evaluation metrics
-def MAPE(true, pred):
-    diff = np.abs(np.array(true) - np.array(pred))
-    return np.mean(diff / true)
-
-def RMSE(predictions, targets):
-    return np.sqrt(((predictions - targets) ** 2).mean())
-
-print(f"根均方误差(RMSE): {RMSE(Y_predict_real / (1024 * 1024), Y_test_real / (1024 * 1024))}")
-print(f"平均绝对百分比误差(MAPE): {MAPE(Y_predict_real, Y_test_real)}")
-
