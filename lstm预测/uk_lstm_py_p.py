@@ -23,7 +23,7 @@ torch.cuda.manual_seed(my_seed)
 
 # Load data
 # 这里你需要加载你的预测数据，替换'all_data'
-all_data = np.fromfile("uk_data")
+all_data = np.fromfile("ec_data")
 stand_scaler = MinMaxScaler()
 all_data = stand_scaler.fit_transform(all_data.reshape(-1, 1))
 
@@ -67,7 +67,7 @@ class LSTMModel(nn.Module):
 lstm = LSTMModel().to(device)
 
 # Load the model parameters
-lstm.load_state_dict(torch.load("F:/network-traffic-predict/lstm训练/uk_lstm_py.pth"))
+lstm.load_state_dict(torch.load("uk_lstm_py.pth"))
 
 # Set the model to evaluation mode
 lstm.eval()

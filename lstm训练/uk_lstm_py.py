@@ -87,11 +87,12 @@ for epoch in range(num_epochs):
 
 
 lstm.train()
-with torch.no_grad():
-    X_test = X_test.view(-1, sequence_len, 1).to(device)
-    Y_predict = lstm(X_test).squeeze().cpu()
-    Y_predict_real = stand_scaler.inverse_transform(Y_predict.squeeze().numpy().reshape(-1, 1))
-    Y_test_real = stand_scaler.inverse_transform(Y_test.cpu().numpy().reshape(-1, 1))
+
+# Perform inference using test data
+X_test = X_test.view(-1, sequence_len, 1).to(device)
+Y_predict = lstm(X_test).squeeze().cpu()
+Y_predict_real = stand_scaler.inverse_transform(Y_predict.detach().cpu().numpy().reshape(-1, 1))
+Y_test_real = stand_scaler.inverse_transform(Y_test.cpu().numpy().reshape(-1, 1))
 
 # Save the model parameters
 torch.save(lstm.state_dict(), 'uk_lstm_py.pth')
