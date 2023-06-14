@@ -36,8 +36,8 @@ X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.05)
 # Convert the data to PyTorch tensors and move to GPU
 X_train = torch.tensor(X_train, dtype=torch.float32).to(device)
 X_test = torch.tensor(X_test, dtype=torch.float32).to(device)
-Y_train = torch.tensor(Y_train, dtype=torch.float32).to(device)
-Y_test = torch.tensor(Y_test, dtype=torch.float32).to(device)
+Y_train = torch.tensor(Y_train, dtype=torch.float32).to(device) #去掉unsqueeze
+Y_test = torch.tensor(Y_test, dtype=torch.float32).to(device) #去掉unsqueeze
 
 # Define the Transformer model using PyTorch
 class TransformerModel(nn.Module):
@@ -53,8 +53,9 @@ class TransformerModel(nn.Module):
         self.fc_out = nn.Linear(self.model_dim * sequence_len, 1)
 
     def forward(self, x):
+        #x = x.view(x.size(0), -1, 1)
         x = self.fc_in(x)  # transform input dimension to model dimension
-        x = self.transformer_encoder(x.unsqueeze(0))
+        x = self.transformer_encoder(x)
         x = self.fc_out(x.view(x.size(0), -1))
         return x
 
@@ -66,12 +67,18 @@ criterion = nn.MSELoss()
 optimizer = optim.Adam(transformer.parameters(), lr=0.001)
 
 # Training loop
-num_epochs = 250
+num_epochs = 50
+batch_size = 32  # Choose a batch size that fits in your memory
+train_dataset = TensorDataset(X_train, Y_train)
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+
 for epoch in range(num_epochs):
-    for i in range(len(X_train)):
+    for i, (x_batch, y_batch) in enumerate(train_loader):
+        # Reshape the input data
+        x_batch = x_batch.view(x_batch.size(0), -1, 1)
         optimizer.zero_grad()
-        output = transformer(X_train[i])
-        loss = criterion(output, Y_train[i].unsqueeze(-1))
+        output = transformer(x_batch)
+        loss = criterion(output.view(-1, 1), y_batch.view(-1, 1)) # 调整输出和标签到正确的维度
         loss.backward()
         optimizer.step()
         if i % 500 == 0:
@@ -82,7 +89,7 @@ transformer.train()
 
 X_test = X_test.view(-1, sequence_len, 1).to(device)
 Y_predict = transformer(X_test).squeeze().cpu()
-Y_predict_real = stand_scaler.inverse_transform(Y_predict.squeeze().numpy().reshape(-1, 1))
+Y_predict_real = stand_scaler.inverse_transform(Y_predict.squeeze().detach().numpy().reshape(-1, 1))
 Y_test_real = stand_scaler.inverse_transform(Y_test.cpu().numpy().reshape(-1, 1))
 
 # Save the model parameters
