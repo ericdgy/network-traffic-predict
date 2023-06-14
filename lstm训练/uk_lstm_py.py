@@ -72,7 +72,7 @@ criterion = nn.MSELoss()
 optimizer = optim.Adam(lstm.parameters(), lr=0.001)
 
 # Training loop
-num_epochs = 250
+num_epochs = 50
 for epoch in range(num_epochs):
     pbar = tqdm(train_loader, total=len(train_loader))  # 使用tqdm包装train_loader
     for batch_x, batch_y in train_loader:
